@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chola Chela Photography | Premium Photo Books Zambia</title>
+  <meta name="description" content="Create stunning custom photo books with Chola Chela Photography. Upload your photos, choose beautiful templates, design and print high-quality photo books in Zambia." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fdf6f0',
+              100: '#f9e8d8',
+              200: '#f2d0b0',
+              300: '#e8b07e',
+              400: '#dc8a4c',
+              500: '#d06f2e',
+              600: '#c15824',
+              700: '#a14420',
+              800: '#833920',
+              900: '#6b311d',
+              950: '#3a180d',
+            },
+            accent: {
+              500: '#1a5f4a',
+              600: '#144a3a',
+            }
+          },
+          fontFamily: {
+            display: ['Playfair Display', 'serif'],
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .font-display { font-family: 'Playfair Display', serif; }
+    .photo-slot {
+      background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23d1d5db' fill-opacity='0.4'%3E%3Cpath d='M0 0h20v20H0V0zm20 20h20v20H20V20z'/%3E%3C/g%3E%3C/svg%3E");
+    }
+    .drop-zone.drag-over { border-color: #d06f2e; background-color: #fdf6f0; }
+  </style>
+</head>
+<body class="bg-stone-50 text-stone-900 antialiased">
+  <div id="root"></div>
+
+  
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel" data-presets="react" id="app-source" style="display:none">
+const { useState, useEffect, useRef, useCallback } = React;
+
+    // ==================== STORAGE HELPERS ====================
+    const STORAGE_KEYS = {
+      USERS: 'cc_users',
+      SESSION: 'cc_session',
+      PHOTOS: 'cc_photos',
+      PROJECTS: 'cc_projects',
+    };
+
+    function loadJSON(key, fallback = null) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch {
+        return fallback;
+      }
+    }
+
+    function saveJSON(key, value) {
+      localStorage.setItem(key, JSON.stringify(value));
+    }
+
+    // ==================== SAMPLE TEMPLATES ====================
+    const TEMPLATES = [
+      {
+        id: 'classic-grid',
+        name: 'Classic Grid',
+        description: 'Clean 2x2 grid per page. Timeless and elegant.',
+        pages: 12,
+        slotsPerPage: 4,
+        layout: 'grid-2x2',
+        coverColor: '#1a5f4a',
+        preview: 'bg-gradient-to-br from-emerald-800 to-emerald-950',
+      },
+      {
+        id: 'story-spread',
+        name: 'Story Spread',
+        description: 'Full-bleed hero + two smaller photos. Perfect for storytelling.',
+        pages: 16,
+        slotsPerPage: 3,
+        layout: 'hero-plus-two',
+        coverColor: '#833920',
+        preview: 'bg-gradient-to-br from-amber-800 to-stone-900',
+      },
+      {
+        id: 'minimal-single',
+        name: 'Minimal Single',
+        description: 'One large photo per page with elegant margins.',
+        pages: 20,
+        slotsPerPage: 1,
+        layout: 'single',
+        coverColor: '#1e293b',
+        preview: 'bg-gradient-to-br from-slate-700 to-slate-900',
+      },
+      {
+        id: 'wedding-elegance',
+        name: 'Wedding Elegance',
+        description: 'Soft romantic layouts ideal for weddings and celebrations.',
+        pages: 24,
+        slotsPerPage: 3,
+        layout: 'wedding',
+        coverColor: '#9f1239',
+        preview: 'bg-gradient-to-br from-rose-800 to-rose-950',
+      },
+      {
+        id: 'travel-journal',
+        name: 'Travel Journal',
+        description: 'Dynamic collage layouts for adventures and journeys.',
+        pages: 18,
+        slotsPerPage: 5,
+        layout: 'collage',
+        coverColor: '#0e7490',
+        preview: 'bg-gradient-to-br from-cyan-800 to-slate-900',
+      },
+      {
+        id: 'family-album',
+        name: 'Family Album',
+        description: 'Warm multi-photo pages for family memories.',
+        pages: 20,
+        slotsPerPage: 6,
+        layout: 'family',
+        coverColor: '#b45309',
+        preview: 'bg-gradient-to-br from-orange-700 to-amber-950',
+      },
+    ];
+
+    // ==================== AUTH CONTEXT SIM ====================
+    function useAuth() {
+      const [user, setUser] = useState(() => loadJSON(STORAGE_KEYS.SESSION));
+      const [users, setUsers] = useState(() => loadJSON(STORAGE_KEYS.USERS, []));
+
+      const signup = (email, password, name) => {
+        if (users.find(u => u.email === email)) {
+          return { ok: false, error: 'Email already registered' };
+        }
+        const newUser = { id: Date.now().toString(), email, password, name, createdAt: new Date().toISOString() };
+        const updated = [...users, newUser];
+        setUsers(updated);
+        saveJSON(STORAGE_KEYS.USERS, updated);
+        const session = { id: newUser.id, email, name };
+        setUser(session);
+        saveJSON(STORAGE_KEYS.SESSION, session);
+        return { ok: true };
+      };
+
+      const login = (email, password) => {
+        const found = users.find(u => u.email === email && u.password === password);
+        if (!found) return { ok: false, error: 'Invalid email or password' };
+        const session = { id: found.id, email: found.email, name: found.name };
+        setUser(session);
+        saveJSON(STORAGE_KEYS.SESSION, session);
+        return { ok: true };
+      };
+
+      const logout = () => {
+        setUser(null);
+        localStorage.removeItem(STORAGE_KEYS.SESSION);
+      };
+
+      return { user, signup, login, logout };
+    }
+
+    // ==================== PHOTOS & PROJECTS ====================
+    function usePhotos(userId) {
+      const [photos, setPhotos] = useState(() => {
+        const all = loadJSON(STORAGE_KEYS.PHOTOS, {});
+        return all[userId] || [];
+      });
+
+      useEffect(() => {
+        if (!userId) return;
+        const all = loadJSON(STORAGE_KEYS.PHOTOS, {});
+        all[userId] = photos;
+        saveJSON(STORAGE_KEYS.PHOTOS, all);
+      }, [photos, userId]);
+
+      const addPhotos = (files) => {
+        const readers = Array.from(files).map(file => {
+          return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              resolve({
+                id: Date.now().toString() + Math.random().toString(36).slice(2),
+                name: file.name,
+                dataUrl: e.target.result,
+                size: file.size,
+                uploadedAt: new Date().toISOString(),
+              });
+            };
+            reader.readAsDataURL(file);
+          });
+        });
+        Promise.all(readers).then(newPhotos => {
+          setPhotos(prev => [...newPhotos, ...prev]);
+        });
+      };
+
+      const removePhoto = (id) => {
+        setPhotos(prev => prev.filter(p => p.id !== id));
+      };
+
+      return { photos, addPhotos, removePhoto };
+    }
+
+    function useProjects(userId) {
+      const [projects, setProjects] = useState(() => {
+        const all = loadJSON(STORAGE_KEYS.PROJECTS, {});
+        return all[userId] || [];
+      });
+
+      useEffect(() => {
+        if (!userId) return;
+        const all = loadJSON(STORAGE_KEYS.PROJECTS, {});
+        all[userId] = projects;
+        saveJSON(STORAGE_KEYS.PROJECTS, all);
+      }, [projects, userId]);
+
+      const createProject = (templateId, title, photoIds = null) => {
+        const template = TEMPLATES.find(t => t.id === templateId);
+        const totalSlots = template.pages * template.slotsPerPage;
+        let photoIndex = 0;
+
+        const pages = Array.from({ length: template.pages }, (_, i) => {
+          const slots = Array(template.slotsPerPage).fill(null);
+          if (photoIds && photoIds.length > 0) {
+            for (let s = 0; s < template.slotsPerPage; s++) {
+              if (photoIndex < photoIds.length) {
+                slots[s] = photoIds[photoIndex];
+                photoIndex++;
+              }
+            }
+          }
+          return {
+            pageNum: i + 1,
+            slots,
+          };
+        });
+
+        const project = {
+          id: Date.now().toString(),
+          title: title || `${template.name} Book`,
+          templateId,
+          pages,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          status: 'draft',
+          autoGenerated: !!(photoIds && photoIds.length > 0),
+        };
+        setProjects(prev => [project, ...prev]);
+        return project;
+      };
+
+      const updateProject = (id, updates) => {
+        setProjects(prev => prev.map(p => p.id === id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p));
+      };
+
+      const deleteProject = (id) => {
+        setProjects(prev => prev.filter(p => p.id !== id));
+      };
+
+      return { projects, createProject, updateProject, deleteProject };
+    }
+
+    // ==================== COMPONENTS ====================
+    function Navbar({ user, onNavigate, onLogout, currentPage }) {
+      return (
+        <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-stone-200">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+            <button onClick={() => onNavigate('home')} className="flex items-center gap-2 group">
+              <div className="w-9 h-9 rounded-full bg-brand-600 flex items-center justify-center text-white font-display font-bold text-lg shadow-md group-hover:bg-brand-700 transition">
+                CC
+              </div>
+              <div className="text-left">
+                <div className="font-display font-semibold text-stone-900 leading-tight">Chola Chela</div>
+                <div className="text-[10px] uppercase tracking-widest text-brand-600 font-medium">Photography</div>
+              </div>
+            </button>
+
+            <div className="hidden md:flex items-center gap-6 text-sm font-medium text-stone-600">
+              <button onClick={() => onNavigate('home')} className={currentPage === 'home' ? 'text-brand-600' : 'hover:text-brand-600'}>Home</button>
+              <button onClick={() => onNavigate('templates')} className={currentPage === 'templates' ? 'text-brand-600' : 'hover:text-brand-600'}>Templates</button>
+              <button onClick={() => onNavigate('how')} className={currentPage === 'how' ? 'text-brand-600' : 'hover:text-brand-600'}>How it Works</button>
+              {user && (
+                <button onClick={() => onNavigate('dashboard')} className={currentPage === 'dashboard' ? 'text-brand-600' : 'hover:text-brand-600'}>My Studio</button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              {user ? (
+                <>
+                  <span className="hidden sm:inline text-sm text-stone-500">Hi, {user.name.split(' ')[0]}</span>
+                  <button onClick={() => onNavigate('dashboard')} className="px-4 py-2 text-sm font-medium rounded-full bg-brand-600 text-white hover:bg-brand-700 transition shadow-sm">
+                    My Studio
+                  </button>
+                  <button onClick={onLogout} className="text-sm text-stone-500 hover:text-stone-800">Logout</button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => onNavigate('login')} className="text-sm font-medium text-stone-600 hover:text-brand-600">Log in</button>
+                  <button onClick={() => onNavigate('signup')} className="px-4 py-2 text-sm font-medium rounded-full bg-brand-600 text-white hover:bg-brand-700 transition shadow-sm">
+                    Get Started
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </nav>
+      );
+    }
+
+    function Hero({ onNavigate, user }) {
+      return (
+        <section className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-brand-50 via-stone-50 to-amber-50"></div>
+          <div className="absolute top-20 right-0 w-96 h-96 bg-brand-200/40 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-10 w-72 h-72 bg-accent-500/10 rounded-full blur-3xl"></div>
+
+          <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-20 md:py-28 grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-100 text-brand-800 text-xs font-semibold mb-6">
+                <span className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse"></span>
+                Zambia's First Dedicated Photo Book Studio
+              </div>
+              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-stone-900 leading-tight mb-6">
+                Turn your photos into <span className="text-brand-600">heirloom books</span>
+              </h1>
+              <p className="text-lg text-stone-600 mb-8 max-w-lg leading-relaxed">
+                Upload your images, choose beautiful templates, design every page, and print premium photo books right here in Zambia. No more shipping overseas.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <button
+                  onClick={() => onNavigate(user ? 'dashboard' : 'signup')}
+                  className="px-7 py-3.5 rounded-full bg-brand-600 text-white font-semibold shadow-lg shadow-brand-600/25 hover:bg-brand-700 hover:shadow-xl transition transform hover:-translate-y-0.5"
+                >
+                  Start Designing Free
+                </button>
+                <button
+                  onClick={() => onNavigate('templates')}
+                  className="px-7 py-3.5 rounded-full border-2 border-stone-300 text-stone-700 font-semibold hover:border-brand-400 hover:text-brand-700 transition"
+                >
+                  Browse Templates
+                </button>
+              </div>
+              <div className="mt-10 flex items-center gap-6 text-sm text-stone-500">
+                <div className="flex -space-x-2">
+                  {[1,2,3,4].map(i => (
+                    <div key={i} className="w-8 h-8 rounded-full bg-stone-300 border-2 border-white flex items-center justify-center text-xs font-medium text-stone-600">{i}</div>
+                  ))}
+                </div>
+                <span>Join photographers & families creating lasting memories</span>
+              </div>
+            </div>
+
+            <div className="relative">
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-stone-900/20 border-4 border-white rotate-2 hover:rotate-0 transition duration-500">
+                <div className="aspect-[4/5] bg-gradient-to-br from-brand-700 via-brand-800 to-stone-900 p-6 flex flex-col">
+                  <div className="text-white/80 text-xs uppercase tracking-widest mb-2">Cover Preview</div>
+                  <div className="font-display text-2xl text-white font-semibold mb-4">Our Family Story</div>
+                  <div className="flex-1 grid grid-cols-2 gap-2">
+                    <div className="bg-white/20 rounded-lg backdrop-blur"></div>
+                    <div className="bg-white/10 rounded-lg"></div>
+                    <div className="bg-white/15 rounded-lg col-span-2"></div>
+                  </div>
+                  <div className="mt-4 text-white/60 text-xs">Hardcover · 20 pages · Matte finish</div>
+                </div>
+              </div>
+              <div className="absolute -bottom-6 -left-6 w-40 h-48 rounded-xl overflow-hidden shadow-xl border-4 border-white -rotate-6 bg-stone-200">
+                <div className="h-full bg-gradient-to-b from-amber-100 to-amber-200 p-3">
+                  <div className="text-[10px] text-amber-800 font-medium">Page 4</div>
+                  <div className="mt-2 grid grid-cols-2 gap-1 h-28">
+                    <div className="bg-white/60 rounded"></div>
+                    <div className="bg-white/40 rounded"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function Features() {
+      const items = [
+        { title: 'Create Account & Upload', desc: 'Securely store your photos. Upload from phone or computer in seconds.', icon: '📷' },
+        { title: 'Beautiful Templates', desc: 'Professionally designed layouts for weddings, family, travel and more.', icon: '📖' },
+        { title: 'Design Your Way', desc: 'Drag photos into slots, rearrange pages, add captions. Full creative control.', icon: '✨' },
+        { title: 'Print Locally', desc: 'Premium printing in Zambia. Fast delivery, no international shipping delays.', icon: '🇿🇲' },
+      ];
+      return (
+        <section className="py-20 bg-white">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <div className="text-center mb-14">
+              <h2 className="font-display text-3xl sm:text-4xl font-bold text-stone-900 mb-4">Everything you need to create</h2>
+              <p className="text-stone-600 max-w-2xl mx-auto">From first upload to finished hardcover book — a complete studio built for Zambian photographers and families.</p>
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {items.map((item, i) => (
+                <div key={i} className="p-6 rounded-2xl bg-stone-50 border border-stone-100 hover:border-brand-200 hover:shadow-lg transition group">
+                  <div className="text-3xl mb-4 group-hover:scale-110 transition">{item.icon}</div>
+                  <h3 className="font-semibold text-stone-900 mb-2">{item.title}</h3>
+                  <p className="text-sm text-stone-600 leading-relaxed">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function TemplateCard({ template, onSelect }) {
+      return (
+        <button
+          onClick={() => onSelect(template)}
+          className="text-left group rounded-2xl overflow-hidden border border-stone-200 bg-white shadow-sm hover:shadow-xl hover:border-brand-300 transition"
+        >
+          <div className={`h-40 ${template.preview} relative`}>
+            <div className="absolute inset-4 bg-white/10 rounded-lg border border-white/20 backdrop-blur-sm flex items-center justify-center">
+              <span className="text-white/90 font-display text-lg font-medium">{template.name}</span>
+            </div>
+          </div>
+          <div className="p-5">
+            <h3 className="font-semibold text-stone-900 mb-1 group-hover:text-brand-700">{template.name}</h3>
+            <p className="text-sm text-stone-500 mb-3 line-clamp-2">{template.description}</p>
+            <div className="flex items-center justify-between text-xs text-stone-400">
+              <span>{template.pages} pages</span>
+              <span>{template.slotsPerPage} photos/page</span>
+            </div>
+          </div>
+        </button>
+      );
+    }
+
+    function TemplatesPage({ onNavigate, user, onSelectTemplate }) {
+      return (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
+          <div className="mb-10">
+            <h1 className="font-display text-3xl font-bold text-stone-900 mb-2">Photo Book Templates</h1>
+            <p className="text-stone-600">Choose a starting point. Every template is fully customizable.</p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {TEMPLATES.map(t => (
+              <TemplateCard
+                key={t.id}
+                template={t}
+                onSelect={() => {
+                  if (!user) {
+                    onNavigate('signup');
+                  } else {
+                    onSelectTemplate(t);
+                  }
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function HowItWorks() {
+      const steps = [
+        { num: '01', title: 'Create your free account', desc: 'Sign up in under a minute. Your photos stay private and secure.' },
+        { num: '02', title: 'Upload your photos', desc: 'Drag & drop from your computer or phone. We support JPG, PNG and more.' },
+        { num: '03', title: 'Pick a template & design', desc: 'Choose a layout, drop photos into slots, rearrange pages, add your story.' },
+        { num: '04', title: 'Order & receive', desc: 'Select size, paper and cover. We print locally in Zambia and deliver.' },
+      ];
+      return (
+        <section className="py-20 bg-stone-100">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <div className="text-center mb-14">
+              <h2 className="font-display text-3xl sm:text-4xl font-bold text-stone-900 mb-4">How it works</h2>
+              <p className="text-stone-600">Simple steps from photos to a book you will treasure forever.</p>
+            </div>
+            <div className="grid md:grid-cols-4 gap-8">
+              {steps.map((s, i) => (
+                <div key={i} className="relative">
+                  <div className="text-5xl font-display font-bold text-brand-200 mb-3">{s.num}</div>
+                  <h3 className="font-semibold text-stone-900 mb-2">{s.title}</h3>
+                  <p className="text-sm text-stone-600">{s.desc}</p>
+                  {i < 3 && <div className="hidden md:block absolute top-8 right-0 w-1/2 h-px bg-brand-200 translate-x-1/2"></div>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function AuthForm({ mode, onSubmit, onSwitch, error }) {
+      const [email, setEmail] = useState('');
+      const [password, setPassword] = useState('');
+      const [name, setName] = useState('');
+
+      const handle = (e) => {
+        e.preventDefault();
+        onSubmit({ email, password, name });
+      };
+
+      return (
+        <div className="min-h-[70vh] flex items-center justify-center px-4">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-stone-100 p-8">
+            <div className="text-center mb-8">
+              <div className="w-12 h-12 rounded-full bg-brand-600 text-white font-display font-bold text-xl flex items-center justify-center mx-auto mb-4">CC</div>
+              <h1 className="font-display text-2xl font-bold text-stone-900">
+                {mode === 'login' ? 'Welcome back' : 'Create your account'}
+              </h1>
+              <p className="text-stone-500 text-sm mt-1">
+                {mode === 'login' ? 'Log in to continue designing' : 'Start creating beautiful photo books'}
+              </p>
+            </div>
+
+            <form onSubmit={handle} className="space-y-4">
+              {mode === 'signup' && (
+                <div>
+                  <label className="block text-sm font-medium text-stone-700 mb-1">Full name</label>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-stone-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 outline-none transition"
+                    placeholder="Chola Chela"
+                  />
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-stone-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-stone-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 outline-none transition"
+                  placeholder="you@example.com"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-stone-700 mb-1">Password</label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-stone-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 outline-none transition"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              {error && <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</div>}
+
+              <button type="submit" className="w-full py-3 rounded-xl bg-brand-600 text-white font-semibold hover:bg-brand-700 transition shadow-md">
+                {mode === 'login' ? 'Log in' : 'Create account'}
+              </button>
+            </form>
+
+            <p className="text-center text-sm text-stone-500 mt-6">
+              {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}
+              <button onClick={onSwitch} className="text-brand-600 font-medium hover:underline">
+                {mode === 'login' ? 'Sign up' : 'Log in'}
+              </button>
+            </p>
+            <p className="text-center text-[11px] text-stone-400 mt-4">
+              Demo mode: data is stored in your browser only.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    function PhotoUploader({ onUpload, photos, onRemove }) {
+      const inputRef = useRef();
+      const [dragging, setDragging] = useState(false);
+
+      const handleFiles = (files) => {
+        if (files?.length) onUpload(files);
+      };
+
+      return (
+        <div>
+          <div
+            className={`drop-zone border-2 border-dashed rounded-2xl p-8 text-center transition cursor-pointer ${dragging ? 'drag-over border-brand-500 bg-brand-50' : 'border-stone-300 hover:border-brand-400'}`}
+            onDragOver={e => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={e => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files); }}
+            onClick={() => inputRef.current?.click()}
+          >
+            <div className="text-4xl mb-3">📤</div>
+            <p className="font-medium text-stone-700">Drop photos here or click to browse</p>
+            <p className="text-sm text-stone-500 mt-1">JPG, PNG · Max ~5MB each for demo</p>
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={e => handleFiles(e.target.files)}
+            />
+          </div>
+
+          {photos.length > 0 && (
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-medium text-stone-800">Your photos ({photos.length})</h3>
+              </div>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                {photos.map(p => (
+                  <div key={p.id} className="relative group aspect-square rounded-lg overflow-hidden bg-stone-100 border border-stone-200">
+                    <img src={p.dataUrl} alt={p.name} className="w-full h-full object-cover" />
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onRemove(p.id); }}
+                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white text-xs opacity-0 group-hover:opacity-100 transition flex items-center justify-center"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function Dashboard({ user, photos, addPhotos, removePhoto, projects, createProject, deleteProject, onNavigate, onOpenProject }) {
+      const [showNew, setShowNew] = useState(false);
+      const [selectedTemplate, setSelectedTemplate] = useState(TEMPLATES[0].id);
+      const [title, setTitle] = useState('');
+      const [autoFill, setAutoFill] = useState(true);
+
+      const handleCreate = () => {
+        const photoIds = autoFill && photos.length > 0
+          ? photos.map(p => p.id)
+          : null;
+        const project = createProject(selectedTemplate, title, photoIds);
+        setShowNew(false);
+        setTitle('');
+        setAutoFill(true);
+        onOpenProject(project.id);
+      };
+
+      return (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
+            <div>
+              <h1 className="font-display text-3xl font-bold text-stone-900">My Studio</h1>
+              <p className="text-stone-500">Welcome back, {user.name}. Design and manage your photo books.</p>
+            </div>
+            <div className="flex gap-3">
+              {photos.length > 0 && (
+                <button
+                  onClick={() => { setAutoFill(true); setShowNew(true); }}
+                  className="px-5 py-2.5 rounded-full border-2 border-brand-600 text-brand-700 font-medium hover:bg-brand-50 transition"
+                >
+                  ⚡ Auto-create Book
+                </button>
+              )}
+              <button
+                onClick={() => { setAutoFill(false); setShowNew(true); }}
+                className="px-5 py-2.5 rounded-full bg-brand-600 text-white font-medium hover:bg-brand-700 shadow-md transition"
+              >
+                + New Photo Book
+              </button>
+            </div>
+          </div>
+
+          {/* New project modal */}
+          {showNew && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6">
+                <h2 className="font-display text-xl font-bold mb-4">Create new photo book</h2>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Book title</label>
+                    <input
+                      value={title}
+                      onChange={e => setTitle(e.target.value)}
+                      placeholder="e.g. Our Wedding 2025"
+                      className="w-full px-4 py-2.5 rounded-xl border border-stone-200 focus:border-brand-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Choose template</label>
+                    <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                      {TEMPLATES.map(t => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => setSelectedTemplate(t.id)}
+                          className={`text-left p-3 rounded-xl border text-sm ${selectedTemplate === t.id ? 'border-brand-500 bg-brand-50' : 'border-stone-200 hover:border-stone-300'}`}
+                        >
+                          <div className="font-medium">{t.name}</div>
+                          <div className="text-xs text-stone-500">{t.pages} pages</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="pt-2">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={autoFill}
+                      onChange={e => setAutoFill(e.target.checked)}
+                      className="w-4 h-4 rounded border-stone-300 text-brand-600 focus:ring-brand-500"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-stone-800">Auto-fill with my photos</div>
+                      <div className="text-xs text-stone-500">
+                        {photos.length === 0
+                          ? "Upload photos first to enable this"
+                          : `Will place ${Math.min(photos.length, TEMPLATES.find(t => t.id === selectedTemplate)?.pages * TEMPLATES.find(t => t.id === selectedTemplate)?.slotsPerPage || 0)} of your ${photos.length} photos automatically`}
+                      </div>
+                    </div>
+                  </label>
+                </div>
+                <div className="flex gap-3 mt-6">
+                  <button onClick={() => setShowNew(false)} className="flex-1 py-2.5 rounded-xl border border-stone-200 font-medium">Cancel</button>
+                  <button
+                    onClick={handleCreate}
+                    className="flex-1 py-2.5 rounded-xl bg-brand-600 text-white font-medium hover:bg-brand-700"
+                  >
+                    {autoFill && photos.length > 0 ? 'Auto-create Book' : 'Create Empty Book'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="grid lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-6">
+              <section>
+                <h2 className="font-semibold text-stone-800 mb-4">Your projects</h2>
+                {projects.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-stone-300 p-12 text-center text-stone-500">
+                    <p className="mb-2 text-lg font-medium text-stone-700">No photo books yet</p>
+                    <p className="mb-5 text-sm">Upload some photos, then let the system create a book for you automatically.</p>
+                    <button
+                      onClick={() => setShowNew(true)}
+                      className="px-5 py-2.5 rounded-full bg-brand-600 text-white font-medium hover:bg-brand-700 transition"
+                    >
+                      {photos.length > 0 ? 'Auto-create my first book' : 'Create your first book'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {projects.map(p => {
+                      const tmpl = TEMPLATES.find(t => t.id === p.templateId);
+                      return (
+                        <div key={p.id} className="flex items-center gap-4 p-4 rounded-xl bg-white border border-stone-200 hover:border-brand-300 hover:shadow-md transition">
+                          <div className={`w-16 h-20 rounded-lg ${tmpl?.preview || 'bg-stone-200'} flex-shrink-0`}></div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-stone-900 truncate">{p.title}</h3>
+                            <p className="text-xs text-stone-500">{tmpl?.name} · {p.pages.length} pages · {p.status}</p>
+                            <p className="text-xs text-stone-400 mt-0.5">Updated {new Date(p.updatedAt).toLocaleDateString()}</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button onClick={() => onOpenProject(p.id)} className="px-3 py-1.5 text-sm rounded-lg bg-brand-600 text-white hover:bg-brand-700">Edit</button>
+                            <button onClick={() => deleteProject(p.id)} className="px-3 py-1.5 text-sm rounded-lg text-stone-500 hover:bg-stone-100">Delete</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            </div>
+
+            <div>
+              <h2 className="font-semibold text-stone-800 mb-4">Photo library</h2>
+              <PhotoUploader onUpload={addPhotos} photos={photos} onRemove={removePhoto} />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function BookEditor({ project, photos, updateProject, onBack }) {
+      const template = TEMPLATES.find(t => t.id === project.templateId);
+      const [currentPage, setCurrentPage] = useState(0);
+      const [selectedSlot, setSelectedSlot] = useState(null);
+      const [draggingPhotoId, setDraggingPhotoId] = useState(null);
+      const [dragOverSlot, setDragOverSlot] = useState(null);
+      const page = project.pages[currentPage];
+
+      const assignPhotoToSlot = (photoId, slotIndex) => {
+        if (slotIndex === null || slotIndex === undefined) return;
+        const newPages = [...project.pages];
+        newPages[currentPage] = {
+          ...page,
+          slots: page.slots.map((s, i) => i === slotIndex ? photoId : s),
+        };
+        updateProject(project.id, { pages: newPages });
+        setSelectedSlot(null);
+        setDragOverSlot(null);
+      };
+
+      const clearSlot = (slotIdx) => {
+        const newPages = [...project.pages];
+        newPages[currentPage] = {
+          ...page,
+          slots: page.slots.map((s, i) => i === slotIdx ? null : s),
+        };
+        updateProject(project.id, { pages: newPages });
+      };
+
+      const getPhoto = (id) => photos.find(p => p.id === id);
+
+      const handleDragStart = (e, photoId) => {
+        setDraggingPhotoId(photoId);
+        e.dataTransfer.setData('text/plain', photoId);
+        e.dataTransfer.effectAllowed = 'copy';
+      };
+
+      const handleDragEnd = () => {
+        setDraggingPhotoId(null);
+        setDragOverSlot(null);
+      };
+
+      const handleSlotDragOver = (e, slotIndex) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        setDragOverSlot(slotIndex);
+      };
+
+      const handleSlotDragLeave = () => {
+        setDragOverSlot(null);
+      };
+
+      const handleSlotDrop = (e, slotIndex) => {
+        e.preventDefault();
+        const photoId = e.dataTransfer.getData('text/plain') || draggingPhotoId;
+        if (photoId) {
+          assignPhotoToSlot(photoId, slotIndex);
+        }
+        setDraggingPhotoId(null);
+        setDragOverSlot(null);
+      };
+
+      const renderLayout = () => {
+        const layout = template?.layout || 'grid-2x2';
+        const slots = page.slots;
+
+        if (layout === 'single') {
+          return (
+            <div className="h-full flex items-center justify-center p-6">
+              <Slot
+                photo={getPhoto(slots[0])}
+                selected={selectedSlot === 0}
+                isDragOver={dragOverSlot === 0}
+                onClick={() => setSelectedSlot(0)}
+                onClear={() => clearSlot(0)}
+                onDragOver={(e) => handleSlotDragOver(e, 0)}
+                onDragLeave={handleSlotDragLeave}
+                onDrop={(e) => handleSlotDrop(e, 0)}
+                className="w-full max-w-md aspect-[3/4]"
+              />
+            </div>
+          );
+        }
+
+        if (layout === 'hero-plus-two') {
+          return (
+            <div className="h-full p-4 flex flex-col gap-3">
+              <Slot
+                photo={getPhoto(slots[0])}
+                selected={selectedSlot === 0}
+                isDragOver={dragOverSlot === 0}
+                onClick={() => setSelectedSlot(0)}
+                onClear={() => clearSlot(0)}
+                onDragOver={(e) => handleSlotDragOver(e, 0)}
+                onDragLeave={handleSlotDragLeave}
+                onDrop={(e) => handleSlotDrop(e, 0)}
+                className="flex-1"
+              />
+              <div className="grid grid-cols-2 gap-3 h-1/3">
+                <Slot
+                  photo={getPhoto(slots[1])}
+                  selected={selectedSlot === 1}
+                  isDragOver={dragOverSlot === 1}
+                  onClick={() => setSelectedSlot(1)}
+                  onClear={() => clearSlot(1)}
+                  onDragOver={(e) => handleSlotDragOver(e, 1)}
+                  onDragLeave={handleSlotDragLeave}
+                  onDrop={(e) => handleSlotDrop(e, 1)}
+                />
+                <Slot
+                  photo={getPhoto(slots[2])}
+                  selected={selectedSlot === 2}
+                  isDragOver={dragOverSlot === 2}
+                  onClick={() => setSelectedSlot(2)}
+                  onClear={() => clearSlot(2)}
+                  onDragOver={(e) => handleSlotDragOver(e, 2)}
+                  onDragLeave={handleSlotDragLeave}
+                  onDrop={(e) => handleSlotDrop(e, 2)}
+                />
+              </div>
+            </div>
+          );
+        }
+
+        // default grid
+        const cols = layout === 'family' ? 3 : 2;
+        return (
+          <div className={`h-full p-4 grid gap-3 ${cols === 3 ? 'grid-cols-3 grid-rows-2' : 'grid-cols-2 grid-rows-2'}`}>
+            {slots.map((slotId, i) => (
+              <Slot
+                key={i}
+                photo={getPhoto(slotId)}
+                selected={selectedSlot === i}
+                isDragOver={dragOverSlot === i}
+                onClick={() => setSelectedSlot(i)}
+                onClear={() => clearSlot(i)}
+                onDragOver={(e) => handleSlotDragOver(e, i)}
+                onDragLeave={handleSlotDragLeave}
+                onDrop={(e) => handleSlotDrop(e, i)}
+              />
+            ))}
+          </div>
+        );
+      };
+
+      return (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <button onClick={onBack} className="text-sm text-stone-500 hover:text-brand-600 mb-1">← Back to studio</button>
+              <h1 className="font-display text-2xl font-bold text-stone-900">{project.title}</h1>
+              <p className="text-sm text-stone-500">{template?.name} · Page {currentPage + 1} of {project.pages.length}</p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => updateProject(project.id, { status: 'ready' })}
+                className="px-4 py-2 rounded-full bg-accent-500 text-white text-sm font-medium hover:bg-accent-600"
+              >
+                Mark Ready for Print
+              </button>
+            </div>
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Canvas */}
+            <div className="lg:col-span-2">
+              <div className="bg-stone-800 rounded-2xl p-4 shadow-2xl">
+                <div className="bg-white aspect-[3/4] max-h-[600px] mx-auto rounded shadow-inner overflow-hidden relative">
+                  {renderLayout()}
+                </div>
+              </div>
+
+              {/* Page navigation */}
+              <div className="flex items-center justify-center gap-3 mt-4">
+                <button
+                  disabled={currentPage === 0}
+                  onClick={() => { setCurrentPage(p => p - 1); setSelectedSlot(null); }}
+                  className="px-3 py-1.5 rounded-lg border border-stone-300 text-sm disabled:opacity-40"
+                >
+                  ← Prev
+                </button>
+                <span className="text-sm text-stone-600">Page {currentPage + 1} / {project.pages.length}</span>
+                <button
+                  disabled={currentPage >= project.pages.length - 1}
+                  onClick={() => { setCurrentPage(p => p + 1); setSelectedSlot(null); }}
+                  className="px-3 py-1.5 rounded-lg border border-stone-300 text-sm disabled:opacity-40"
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+
+            {/* Sidebar: photos */}
+            <div>
+              <div className="bg-white rounded-2xl border border-stone-200 p-4 sticky top-24">
+                <h3 className="font-medium text-stone-800 mb-1">Your Photos</h3>
+                <p className="text-xs text-stone-500 mb-3">
+                  Drag a photo onto a slot, or click a slot then click a photo
+                </p>
+                {photos.length === 0 ? (
+                  <p className="text-sm text-stone-500">Upload photos in your studio first.</p>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2 max-h-96 overflow-y-auto">
+                    {photos.map(p => (
+                      <div
+                        key={p.id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, p.id)}
+                        onDragEnd={handleDragEnd}
+                        onClick={() => selectedSlot !== null && assignPhotoToSlot(p.id, selectedSlot)}
+                        className={`aspect-square rounded-lg overflow-hidden border-2 transition cursor-grab active:cursor-grabbing
+                          ${draggingPhotoId === p.id ? 'opacity-50 border-brand-400' : 'border-transparent hover:border-brand-400'}
+                          ${selectedSlot !== null ? 'ring-1 ring-brand-200' : ''}`}
+                        title="Drag onto a page slot"
+                      >
+                        <img src={p.dataUrl} alt="" className="w-full h-full object-cover pointer-events-none" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {selectedSlot !== null && (
+                  <p className="text-xs text-brand-600 mt-3">Slot {selectedSlot + 1} selected — click or drag a photo</p>
+                )}
+                {draggingPhotoId && (
+                  <p className="text-xs text-brand-600 mt-3 font-medium">Drop onto a slot on the page →</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function Slot({ photo, selected, isDragOver, onClick, onClear, onDragOver, onDragLeave, onDrop, className = '' }) {
+      return (
+        <div
+          onClick={onClick}
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          onDrop={onDrop}
+          className={`relative rounded-lg overflow-hidden border-2 transition cursor-pointer photo-slot
+            ${isDragOver ? 'border-brand-500 ring-4 ring-brand-300 bg-brand-50 scale-[1.02]' : ''}
+            ${selected && !isDragOver ? 'border-brand-500 ring-2 ring-brand-200' : ''}
+            ${!selected && !isDragOver ? 'border-stone-200 hover:border-brand-300' : ''}
+            ${className}`}
+        >
+          {photo ? (
+            <>
+              <img src={photo.dataUrl} alt="" className="w-full h-full object-cover" />
+              <button
+                onClick={(e) => { e.stopPropagation(); onClear(); }}
+                className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/50 text-white text-xs flex items-center justify-center opacity-0 hover:opacity-100 transition"
+              >
+                ×
+              </button>
+            </>
+          ) : (
+            <div className={`absolute inset-0 flex flex-col items-center justify-center text-sm
+              ${isDragOver ? 'text-brand-600 font-medium' : 'text-stone-400'}`}>
+              {isDragOver ? (
+                <>
+                  <span className="text-2xl mb-1">↓</span>
+                  Drop photo here
+                </>
+              ) : (
+                '+ Add photo'
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function Footer() {
+      return (
+        <footer className="bg-stone-900 text-stone-400 py-12 mt-auto">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 grid md:grid-cols-3 gap-8">
+            <div>
+              <div className="font-display text-white text-lg font-semibold mb-2">Chola Chela Photography</div>
+              <p className="text-sm leading-relaxed">Premium photo books designed and printed in Zambia. Preserving your memories with craftsmanship.</p>
+            </div>
+            <div>
+              <h4 className="text-white font-medium mb-3">Services</h4>
+              <ul className="text-sm space-y-1">
+                <li>Custom Photo Books</li>
+                <li>Wedding Albums</li>
+                <li>Family Memory Books</li>
+                <li>Travel Journals</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-white font-medium mb-3">Contact</h4>
+              <p className="text-sm">Lusaka, Zambia</p>
+              <p className="text-sm">hello@cholachela.zm</p>
+              <p className="text-sm mt-2 text-stone-500">© {new Date().getFullYear()} Chola Chela Photography. Demo prototype.</p>
+            </div>
+          </div>
+        </footer>
+      );
+    }
+
+    // ==================== MAIN APP ====================
+    function App() {
+      const { user, signup, login, logout } = useAuth();
+      const { photos, addPhotos, removePhoto } = usePhotos(user?.id);
+      const { projects, createProject, updateProject, deleteProject } = useProjects(user?.id);
+
+      const [page, setPage] = useState('home');
+      const [authError, setAuthError] = useState('');
+      const [editingProjectId, setEditingProjectId] = useState(null);
+
+      const navigate = (p) => {
+        setPage(p);
+        setAuthError('');
+        setEditingProjectId(null);
+        window.scrollTo(0, 0);
+      };
+
+      const handleSignup = ({ email, password, name }) => {
+        const res = signup(email, password, name);
+        if (res.ok) navigate('dashboard');
+        else setAuthError(res.error);
+      };
+
+      const handleLogin = ({ email, password }) => {
+        const res = login(email, password);
+        if (res.ok) navigate('dashboard');
+        else setAuthError(res.error);
+      };
+
+      const openProject = (id) => {
+        setEditingProjectId(id);
+        setPage('editor');
+      };
+
+      const editingProject = projects.find(p => p.id === editingProjectId);
+
+      return (
+        <div className="min-h-screen flex flex-col">
+          <Navbar user={user} onNavigate={navigate} onLogout={() => { logout(); navigate('home'); }} currentPage={page} />
+
+          <main className="flex-1">
+            {page === 'home' && (
+              <>
+                <Hero onNavigate={navigate} user={user} />
+                <Features />
+                <HowItWorks />
+                <section className="py-16 bg-brand-600 text-white text-center">
+                  <div className="max-w-2xl mx-auto px-4">
+                    <h2 className="font-display text-3xl font-bold mb-4">Ready to create your first photo book?</h2>
+                    <p className="text-brand-100 mb-6">Join the movement bringing professional photo book printing to Zambia.</p>
+                    <button
+                      onClick={() => navigate(user ? 'dashboard' : 'signup')}
+                      className="px-8 py-3.5 rounded-full bg-white text-brand-700 font-semibold hover:bg-brand-50 transition shadow-lg"
+                    >
+                      Get Started — It's Free
+                    </button>
+                  </div>
+                </section>
+              </>
+            )}
+
+            {page === 'templates' && (
+              <TemplatesPage
+                onNavigate={navigate}
+                user={user}
+                onSelectTemplate={(t) => {
+                  if (user) {
+                    const project = createProject(t.id);
+                    openProject(project.id);
+                  }
+                }}
+              />
+            )}
+
+            {page === 'how' && <HowItWorks />}
+
+            {page === 'login' && (
+              <AuthForm
+                mode="login"
+                onSubmit={handleLogin}
+                onSwitch={() => navigate('signup')}
+                error={authError}
+              />
+            )}
+
+            {page === 'signup' && (
+              <AuthForm
+                mode="signup"
+                onSubmit={handleSignup}
+                onSwitch={() => navigate('login')}
+                error={authError}
+              />
+            )}
+
+            {page === 'dashboard' && user && (
+              <Dashboard
+                user={user}
+                photos={photos}
+                addPhotos={addPhotos}
+                removePhoto={removePhoto}
+                projects={projects}
+                createProject={createProject}
+                deleteProject={deleteProject}
+                onNavigate={navigate}
+                onOpenProject={openProject}
+              />
+            )}
+
+            {page === 'editor' && user && editingProject && (
+              <BookEditor
+                project={editingProject}
+                photos={photos}
+                updateProject={updateProject}
+                onBack={() => navigate('dashboard')}
+              />
+            )}
+
+            {(page === 'dashboard' || page === 'editor') && !user && (
+              <div className="py-20 text-center">
+                <p className="mb-4">Please log in to access your studio.</p>
+                <button onClick={() => navigate('login')} className="text-brand-600 font-medium">Log in</button>
+              </div>
+            )}
+          </main>
+
+          <Footer />
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+
+  <script>
+    // Reliable loader that works with file:// protocol
+    (function() {
+      function startApp() {
+        try {
+          const sourceEl = document.getElementById('app-source');
+          if (!sourceEl) {
+            console.error('App source not found');
+            return;
+          }
+          const code = sourceEl.textContent;
+          const transformed = Babel.transform(code, {
+            presets: [['react', { runtime: 'classic' }]],
+            filename: 'app.jsx'
+          }).code;
+
+          // Execute the transformed code
+          eval(transformed);
+          console.log('Chola Chela app started successfully');
+        } catch (err) {
+          console.error('Failed to start app:', err);
+          document.getElementById('root').innerHTML = '<div style="padding:40px;font-family:sans-serif;max-width:600px;margin:40px auto;"><h2>Something went wrong</h2><p>Please open the browser console (F12) for details.</p><pre style="background:#f5f5f5;padding:12px;overflow:auto;">' + err.message + '</pre></div>';
+        }
+      }
+
+      // Wait until React, ReactDOM and Babel are ready
+      function checkReady() {
+        if (window.React && window.ReactDOM && window.Babel) {
+          startApp();
+        } else {
+          setTimeout(checkReady, 50);
+        }
+      }
+      checkReady();
+    })();
+  </script>
+
+</body>
+</html>
